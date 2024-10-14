@@ -1,0 +1,77 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<odoo>
+    <template id="products_item" inherit_id="website_sale.products_item">
+        <xpath expr="//div[hasclass('o_wsale_product_information_text')]" position="after">
+            <div>
+                Discount (%): <span t-field="product.discount_percentage"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('product_price')]" position="replace">
+            <t t-if="'base_price' in template_price_vals and (template_price_vals['base_price'] &gt; template_price_vals['price_reduce']) and (template_price_vals['price_reduce'] or not website.prevent_zero_price_sale)">
+                <del t-attf-class="text-muted me-1 h6 mb-0" style="white-space: nowrap;">
+                    <em class="small" t-esc="template_price_vals['base_price']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}" />
+                </del>
+
+            </t>
+            <t t-if="product.discount_percentage > 0">
+                <span class="h6 mb-0"  style="text-decoration-line: line-through; color: #dc3545" t-if="template_price_vals['price_reduce'] or not website.prevent_zero_price_sale" t-esc="template_price_vals['price_reduce']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                <span class="h6 mb-0" t-else="" t-field="website.prevent_zero_price_sale_text"/>
+            </t>
+            <t t-else="">
+                <span class="h6 mb-0"  t-if="template_price_vals['price_reduce'] or not website.prevent_zero_price_sale" t-esc="template_price_vals['price_reduce']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                <span class="h6 mb-0" t-else="" t-field="website.prevent_zero_price_sale_text"/>
+            </t>
+            <t t-if="product.discount_percentage > 0">
+                <!--<t t-set="disc_val" t-value="(product.discount_percentage / 100) * product.list_price"/>-->
+                <span t-esc="product.get_discount_value()" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+
+            </t>
+            <span itemprop="price" style="display:none;" t-esc="template_price_vals['price_reduce']" />
+            <span itemprop="priceCurrency" style="display:none;" t-esc="website.currency_id.name" />
+        </xpath>
+
+    </template>
+
+    <template id="order_line_template" inherit_id="website_sale.cart_lines">
+        <xpath expr="//div[@name='website_sale_cart_line_price']" position="replace">
+            <div class="mb-0 h6 fw-bold text-end" name="website_sale_cart_line_price">
+            <t t-if="line.discount">
+                                <del t-attf-class="#{'text-danger mr8'}"
+                                     style="white-space: nowrap;"
+                                     t-out="line._get_displayed_unit_price() * line.product_uom_qty"
+                                     t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                            </t>
+                <t t-if="line.product_id.product_tmpl_id.discount_percentage > 0">
+                    <t t-if="website.show_line_subtotals_tax_selection == 'tax_excluded'"
+                               t-set='product_price'
+                               t-value='line.product_id.product_tmpl_id.get_discount_value() * line._get_displayed_quantity()'/>
+                    <t t-else=""
+                               t-set='product_price'
+                               t-value='line.product_id.product_tmpl_id.get_discount_value() * line._get_displayed_quantity()'/>
+                </t>
+                <t t-else="">
+                    <t t-if="website.show_line_subtotals_tax_selection == 'tax_excluded'"
+                               t-set='product_price'
+                               t-value='line.price_subtotal'/>
+                            <t t-else=""
+                               t-set='product_price'
+                               t-value='line.price_total'/>
+                </t>
+
+                            <span t-out="product_price" style="white-space: nowrap;"
+                                  t-options="{'widget': 'monetary', 'display_currency': website_sale_order.currency_id}"/>
+                            <small t-if="not line._is_not_sellable_line() and line.product_id.base_unit_price"
+                                   class="cart_product_base_unit_price d-block text-muted"
+                                   groups="website_sale.group_show_uom_price">
+                                <t t-call='website_sale.base_unit_price'>
+                                    <t t-set='product' t-value='line.product_id'/>
+                                    <t t-set='combination_info'
+                                       t-value="{'base_unit_price': product._get_base_unit_price(product_price/line.product_uom_qty)}"/>
+                                </t>
+                            </small>
+            </div>
+        </xpath>
+
+
+    </template>
+</odoo>
